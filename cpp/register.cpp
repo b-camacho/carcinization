@@ -205,7 +205,7 @@ int main(int argc, const char** argv)
         return 1;
     }
 
-    const auto inventory = parseInventory(ifs);
+    auto inventory = parseInventory(ifs);
     printInventory(inventory);
 
     std::ifstream cfs(argv[2]);
@@ -216,6 +216,23 @@ int main(int argc, const char** argv)
 
     const auto receipt = parseCart(cfs, inventory);
     printf("\n");
+    printReceipt(receipt);
+
+    // Inflation lol
+    for (auto& kv : inventory) {
+        auto& v = kv.second;
+        v.price *= 12;
+        v.price /= 10;
+        if (v.discountPrice) { // It comes for us all
+            *v.discountPrice *= 12;
+            *v.discountPrice /= 10;
+        }
+    }
+
+    // const is fun in C++ - we have a const reference to an inventory listing,
+    // and yet they all changed!
+    // And our data structure (the receipt) that points to it changes as a result!
+    printf("\nThis ain't right - the receipt changed!\n");
     printReceipt(receipt);
 
     return 0;
