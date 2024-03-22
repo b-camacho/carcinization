@@ -109,6 +109,73 @@ Inventory parseInventory(std::ifstream& f) {
     return inventory;
 }
 
+struct ReceiptLine {
+    const Listing* what = nullptr;
+    int quantity = 0;
+};
+
+struct Receipt {
+    std::map<Barcode, ReceiptLine> items;
+    bool discountMember = false;
+};
+
+void printReceipt(const Receipt& r) {
+    int total = 0;
+    int savings = 0;
+    for (const auto& kv : r.items) {
+        const auto& item = kv.second;
+        const auto& listing = *item.what;
+        int price = 0;
+        if (r.discountMember) {
+            price = listing.discountPrice.value_or(listing.price);
+        } else {
+            price = listing.price;
+        }
+        printf("%d %s: %.2f\n", item.quantity, listing.name.c_str(), price / 100.0f);
+        total += price;
+        if (r.discountMember && listing.discountPrice) {
+            savings += listing.price - *listing.discountPrice;
+        }
+    }
+    printf("Total: %.2f\n", total / 100.0f);
+    printf("Savings: %.2f\n", savings / 100.0f);
+}
+
+Receipt parseCart(std::ifstream& f, const Inventory& inventory) {
+    Receipt receipt;
+    std::string l;
+    while (std::getline(f, l)) {
+        char code = 0;
+        int id = 0;
+        assert(sscanf(l.c_str(), "%c %d", &code, &id) == 2);
+        switch (code) {
+            case 'I': {
+                auto& receiptLine = receipt.items[id];
+                if (receiptLine.what == nullptr) {
+                    // This is the first time we're mentioning this item;
+                    // point its "what" pointer at the inventory entry.
+                    const auto invEntry = inventory.find(id);
+                    if (invEntry == inventory.end()) {
+                        fprintf(stderr, "Can't find item %d!\n", id);
+                        abort();
+                    }
+                    receiptLine.what = &invEntry->second;
+                }
+                ++receiptLine.quantity;
+                break;
+            }
+            case 'D':
+                receipt.discountMember = true;
+                break;
+
+            default:
+                fprintf(stderr, "Bogus cart line: %s\n", l.c_str());
+                abort();
+        }
+    }
+    return receipt;
+}
+
 // _Wouldn't rehash or invalidate any of the Listing* in receipts.
 // We *can't* do this in Rust while we have a Receipt referencing inventory
 // because we'd be mutably borrowing the inventory and the listings would be
@@ -140,6 +207,17 @@ int main(int argc, const char** argv)
 
     const auto inventory = parseInventory(ifs);
     printInventory(inventory);
+
+    std::ifstream cfs(argv[2]);
+    if (!cfs) {
+        fprintf(stderr, "Couldn't open %s\n", argv[2]);
+        return 1;
+    }
+
+    const auto receipt = parseCart(cfs, inventory);
+    printf("\n");
+    printReceipt(receipt);
+
     return 0;
 }
 
