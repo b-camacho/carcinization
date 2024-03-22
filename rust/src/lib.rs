@@ -21,26 +21,18 @@ pub struct ReceiptLine<'a> {
     what: &'a Listing,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Receipt<'a> {
     pub items: HashMap<Barcode, ReceiptLine<'a>>,
     pub disc: bool,
-}
-impl<'a> Receipt<'a> {
-    pub fn new() -> Self {
-        Receipt {
-            items: HashMap::new(),
-            disc: false,
-        }
-    }
 }
 
 pub fn show_receipt(receipt: &Receipt) {
     let is_disc = receipt.disc;
     let totals: Vec<(_, _, _, _)> = receipt
         .items
-        .iter()
-        .map(|(_, line)| {
+        .values()
+        .map(|line| {
             let price = if is_disc {
                 line.what.price_disc.unwrap_or(line.what.price)
             } else {
@@ -80,7 +72,7 @@ pub fn scan_item<'a>(
     if let Some(what) = inventory.get(&barcode) {
         receipt
             .items
-            .insert(barcode.clone(), ReceiptLine { quantity: 1, what });
+            .insert(barcode, ReceiptLine { quantity: 1, what });
         Ok(())
     } else {
         Err(format!("no item with barcode: {}", barcode))
@@ -90,7 +82,7 @@ pub fn scan_item<'a>(
 pub fn parse_inventory(text: &str) -> Option<Inventory> {
     let mut inv = Inventory::new();
     for line in text.trim().lines() {
-        let fields: Vec<&str> = line.split(" ").collect();
+        let fields: Vec<&str> = line.split(' ').collect();
         match fields[..] {
             ["I", barcode, name] => {
                 inv.insert(
@@ -119,7 +111,7 @@ pub fn parse_barcodes(text: &str) -> Option<(Vec<i32>, bool)> {
     let mut barcodes = Vec::new();
     let mut is_discount = false;
     for line in text.trim().lines() {
-        let fields: Vec<&str> = line.split(" ").collect();
+        let fields: Vec<&str> = line.split(' ').collect();
         match fields[..] {
             ["I", barcode] => barcodes.push(barcode.parse::<i32>().ok()?),
             ["D", _] => is_discount = true,
@@ -130,7 +122,7 @@ pub fn parse_barcodes(text: &str) -> Option<(Vec<i32>, bool)> {
     Some((barcodes, is_discount))
 }
 
-pub fn parse_args(argv: &Vec<String>) -> Option<Args> {
+pub fn parse_args(argv: &[String]) -> Option<Args> {
     if argv.len() != 3 {
         None
     } else {
