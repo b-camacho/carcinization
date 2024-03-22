@@ -131,10 +131,11 @@ void printReceipt(const Receipt& r) {
         } else {
             price = listing.price;
         }
+        price *= item.quantity;
         printf("%d %s: %.2f\n", item.quantity, listing.name.c_str(), price / 100.0f);
         total += price;
         if (r.discountMember && listing.discountPrice) {
-            savings += listing.price - *listing.discountPrice;
+            savings += item.quantity * (listing.price - *listing.discountPrice);
         }
     }
     printf("Total: %.2f\n", total / 100.0f);
