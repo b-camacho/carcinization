@@ -55,8 +55,26 @@ pub fn show_receipt(receipt: &Receipt) {
         .iter()
         .map(|(quantity, name, subtotal, _)| format!("{name} ({quantity}): ${subtotal:.2}"))
         .collect();
+    println!("//// Receipt ////");
     println!("{}", lines.join("\n"));
     println!("Total: ${actual_total:.2}, Savings: ${total_savings:.2}")
+}
+
+pub fn checkout<'a>(
+    barcodes: &[Barcode],
+    is_discount: bool,
+    inventory: &'a Inventory,
+) -> Receipt<'a> {
+    let mut receipt = Receipt {
+        disc: is_discount,
+        items: HashMap::new(),
+    };
+
+    for barcode in barcodes {
+        scan_item(*barcode, &mut receipt, inventory).expect("bad scan");
+    }
+
+    receipt
 }
 
 pub fn scan_item<'a>(
@@ -130,5 +148,13 @@ pub fn parse_args(argv: &[String]) -> Option<Args> {
             inventory_path: argv[1].to_owned().into(),
             cart_path: argv[2].to_owned().into(),
         })
+    }
+}
+
+pub fn inflation(inventory: &mut Inventory) {
+    for v in inventory.values_mut() {
+        v.price *= 12;
+        v.price /= 10;
+        v.price_disc = v.price_disc.map(|pd| (pd * 12) / 10);
     }
 }
