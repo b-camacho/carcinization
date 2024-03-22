@@ -2,23 +2,35 @@
 With two rust learning sessions under your belt, you are ready for the crustacean rite of passage: Rewriting It In Rust.
 
 # Goal
-Under `cpp/` you'll find a fully working C++ app for scanning barcodes, and printing a receipt.
-The app will also load a list of available items ahead of time.
+Under `cpp/` you'll find a fully working C++ app for scanning barcodes and receipts.
+It uses two data files.
 
-For example, given the file:
+An inventory file:
 ```
-# items.json
-{"barcode": 0x1337, "name": "apple", "price": 75}
-{"barcode": 0x7331, "name": "orange", "price": 50}
+# inventory.txt
+i 1848 milk # new item, barcode = 1848, name = milk
+p 1848 350 # item price, for barcode 1848, price = 350 cents
+d 1848 325 # discounted price for barcode 1848
+i 30 butter
+p 30 499 # no discounts on butter :(
 ```
-your program could be called as
+and
 ```
-echo "[0x1337, 0x7331, 0x7331]" | receipt --items items.json
-```
-and should print
-```
-{"total": "$1.75", "items": [
- { "qty": 1, "name": "apple", "cost": "$0.75"}, {"qty": 2, "name": "apple", "cost": "$1.00"}]
+# cart.txt
+I 1848 # first item in cart is barcode Milk
+I 30 # second item is butter
+I 1848 # third item is another carton of milk
+D 10 # user scanned a discount code (ignore the code)
 ```
 
+Calling your program like this:
+`register inventory.txt cart.txt`
+should print a receipt that looks something like this:
+```
+//// Receipt ////
+Butter (1): $4.99
+Milk (2): $6.50
+Total: $11.49, Savings: $0.50
+```
+Notice it even prints our discount savings!
 
