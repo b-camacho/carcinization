@@ -1,0 +1,15 @@
+I 1848 Milk
+P 1848 350
+D 1848 325
+I 30 Butter
+P 30 499
+I 22 Eggs
+P 22 449
+D 22 420
+I 42 Buttermilk
+P 42 199
+I 1452 Spaghetti
+P 1452 229
+I 82 Flour
+P 82 549
+D 82 540
